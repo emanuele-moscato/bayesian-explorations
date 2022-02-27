@@ -13,6 +13,8 @@ Here's a (surely incomplete) list of Python libraries to build Bayesian models:
 
 - [PyStan](https://pystan.readthedocs.io/en/latest/) (the Python interface to the Stan platform, written in C++).
 
+- [ArviZ](https://arviz-devs.github.io/arviz/index.html) (a library for exploratory analysis of Bayesian models, e.g. plotting, diagnostics and model comparison, that works on top of many packages, among which PyMC, PyStan and TFP).
+
 - [Edward](http://edwardlib.org/).
 
 **Suggestion:** start with one and focus on that. I've personally chosen **TFP** because I find it quite complete in terms of features and because being from Google we can be sure it's well maintained - plus, I was curious about exploring TensorFlow in general and Bayesian neural networks in particular.
@@ -22,11 +24,13 @@ Here's a (surely incomplete) list of Python libraries to build Bayesian models:
 Books:
 - Davidson-Pilon (and contributors) - [Probabilistic Programming and Bayesian Methods for Hackers](https://github.com/CamDavidsonPilon/Probabilistic-Programming-and-Bayesian-Methods-for-Hackers): very good starting point, very hands-on, with all the content freely available in notebooks on GitHub and coding done in PyMC, TFP and for some chapters Pyro as well.
 
-- Gelman, Carlin, Stern, Dunson, Vehtari, Rubin - [Bayesian data analysis](http://www.stat.columbia.edu/~gelman/book/): one of the bibles on Bayesian models, with Gelman being one of the world's leading scientists on the subject.
+- Gelman, Carlin, Stern, Dunson, Vehtari, Rubin - [Bayesian data analysis](http://www.stat.columbia.edu/~gelman/book/): one of the bibles on Bayesian models, with Gelman being one of the world's leading scientists on the subject. Coding in PyMC is also available (see below).
 
-- McElreath - [Statistical rethinking](https://www.routledge.com/Statistical-Rethinking-A-Bayesian-Course-with-Examples-in-R-and-STAN/McElreath/p/book/9780367139919): another very famous book, with an [associated GitHub repo](https://github.com/rmcelreath/rethinking) and lecture course ([here](https://github.com/rmcelreath/stat_rethinking_2022) for year 2022) with YouTube videos (see the playlist linked therein).
+- McElreath - [Statistical rethinking](https://www.routledge.com/Statistical-Rethinking-A-Bayesian-Course-with-Examples-in-R-and-STAN/McElreath/p/book/9780367139919): another very famous book, with an [associated GitHub repo](https://github.com/rmcelreath/rethinking) and lecture course ([here](https://github.com/rmcelreath/stat_rethinking_2022) for year 2022) with YouTube videos (see the playlist linked therein). Coding in PyMC is also available (see below).
 
-- Martin - [Bayesian analysis with Python - Second edition](https://www.packtpub.com/product/bayesian-analysis-with-python-second-edition/9781789341652): from one of the authors of PyMC.
+- Kruschke - [Doing Bayesian data analysis](https://sites.google.com/site/doingbayesiandataanalysis/): another good book on Bayesian models.
+
+- Martin, Kumar, Lao - [Bayesian analysis with Python - Second edition](https://www.packtpub.com/product/bayesian-analysis-with-python-second-edition/9781789341652): from some of the authors of PyMC and TFP, good book on Bayesian models, covers topics like model assessment and comparison in the Bayesian setting. Examples are given in PyMC and TFP.
 
 - Wiecki - [An Intuitive Guide to Bayesian Statistics](https://twiecki.io/pages/an-intuitive-guide-to-bayesian-statistics.html): upcoming course on Bayesian models with Python, from another of the authors of PyMC.
 
@@ -35,6 +39,8 @@ Books:
   - [Bayesian methods in machine learning](https://www.coursera.org/learn/bayesian-methods-in-machine-learning): quite theoretical, but coding parts are present as well (with PyMC). Good if you're interested in gaining a good foundation and if maths (with some demonstrations at the blackboard as well!) doesn't scare you. Topics include: Bayesian methods in general, the Expectation-Maximization algorithm, variational inference, MCMC, Gaussian processes and Bayesian optimization.
 
   - [Probabilistic Deep Learning with TensorFlow 2](https://www.coursera.org/learn/probabilistic-deep-learning-with-tensorflow2): very good course on Bayesian statistics applied to deep learning, all done using TFP. Topics like probabilistic neural network layers, the Bayes by backprop algorithm and variational inference are covered.
+
+- Coding "porting" of famous books: much in the style of the Davidson-Pilon's book, the PyMC team has coded up the examples of some famous books (among which Gelman's and McElreath's) and put everything [on GitHub](https://github.com/pymc-devs/resources).
 
 - Other books (mentioned exclusively for completeness!) on statistical models and machine learning that also touch some of the topics explored here:
 
