@@ -57,9 +57,3 @@ def plot_history(training_history):
         plt.title(f'{key}', fontsize=14)
         plt.xlabel('Epoch')
         plt.ylabel('Value')
-
-
-def nll(y_true, distr):
-    """
-    """
-    return - distr.log_prob(y_true)

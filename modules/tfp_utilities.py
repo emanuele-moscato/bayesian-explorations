@@ -9,6 +9,12 @@ tfd = tfp.distributions
 sns.set_theme()
 
 
+def nll(y_true, distr):
+    """
+    """
+    return - distr.log_prob(y_true)
+
+
 def get_divergence_fn(norm_factor):
     """
     Return a callable to be used as divergence function given by the KL
@@ -52,7 +58,7 @@ def plot_prediction_distr(
     )
 
     # Generate predictions (distributions) for the x values to plot.
-    pred_plot = model(x_plot)
+    pred_plot = model(x_plot[:, tf.newaxis])
 
     # Plot the
     sns.scatterplot(
@@ -85,3 +91,54 @@ def plot_prediction_distr(
     plt.xlabel('x')
     plt.ylabel('y')
     plt.title('Synthetic data', fontsize=14)
+
+
+def generate_predictions(model, points, n_distr=5, n_samples=500):
+    """
+    Generates predictions for the specified points from a Bayesian model.
+    For each point, first we sample `n_distr` sets of parameters, then we
+    sample the distribution corresponding to each set of parameters
+    `n_samples` times.
+
+    In total for each point in `points` we'll have:
+      * `n_distr` output Gaussian distributions, the mean and standard
+        deviation of which is appended to `means` and `stdevs` respectively.
+      * `n_means * n_samples` samples (`n_samples` for each mean).
+
+    If `n_samples` is set to `None`, then the distributions are not sampled at
+    all.
+
+    Parameters
+    ----------
+    points : list
+        List of values to predict for (i.e. the x values).
+    n_means : int (default: 5)
+        Number of distributions to generate for each point.
+    n_samples : int (default: 500)
+        Number of sampled points (y values) from each distribution.
+    """
+    points = tf.constant([[p] for p in points])
+
+    # Final shape: (n_means, n_points).
+    means = []
+
+    # Final shape: (n_means, n_points).
+    stdevs = []
+
+    # Final shape: (n_samples, n_means, n_points).
+    samples = []
+
+    for i in range(n_distr):
+        distr = model(points)
+
+        means.append(distr.mean()[:, 0].numpy().tolist())
+        stdevs.append(distr.stddev()[:, 0].numpy().tolist())
+
+        if n_samples is not None:
+            samples.append(distr.sample(n_samples)[:, :, 0].numpy().tolist())
+
+    means = tf.constant(means)
+    stdevs = tf.constant(stdevs)
+    samples = tf.constant(samples)
+
+    return means, stdevs, samples
