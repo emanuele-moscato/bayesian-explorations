@@ -57,3 +57,40 @@ def plot_history(training_history):
         plt.title(f'{key}', fontsize=14)
         plt.xlabel('Epoch')
         plt.ylabel('Value')
+
+
+class MCDropoutModel(tf.keras.Model):
+    """
+    Given a model with dropout layers (passed to the constructor), this class
+    builds an equivalent model with the same exact layers (with trained
+    parameters), but in which the dropout layers are always called with the
+    `training` option set to True so the sampling happens at inference time as
+    well.
+    """
+    def __init__(self, original_model):
+        """
+        Class constructor. In requires the original model (with dropout
+        layers) as the input.
+        """
+        super().__init__()
+
+        self.original_model = original_model
+
+    def build(self):
+        """
+        """
+        input = tf.keras.layers.Input(
+            shape=self.original_model.input.shape[1:]
+        )
+
+        output = self.original_model.layers[0](input)
+
+        for layer in self.original_model.layers[1:]:
+            if 'dropout' in layer.name:
+                print(f'Dropout layer found: {layer.name}')
+
+                output = layer(output, training=True)
+            else:
+                output = layer(output)
+
+        return tf.keras.Model(inputs=input, outputs=output)
