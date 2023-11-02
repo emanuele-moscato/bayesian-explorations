@@ -9,6 +9,9 @@ tfd = tfp.distributions
 sns.set_theme()
 
 
+# Decorator enabling the function to be automatically registered as a custom
+# loss by Keras when saving models.
+@tf.keras.saving.register_keras_serializable()
 def nll(y_true, distr):
     """
     """
@@ -110,22 +113,24 @@ def generate_predictions(model, points, n_distr=5, n_samples=500):
 
     Parameters
     ----------
+    model: keras.Model
+        A Bayesian model.
     points : list
         List of values to predict for (i.e. the x values).
-    n_means : int (default: 5)
+    n_distr : int (default: 5)
         Number of distributions to generate for each point.
     n_samples : int (default: 500)
         Number of sampled points (y values) from each distribution.
     """
     points = tf.constant([[p] for p in points])
 
-    # Final shape: (n_means, n_points).
+    # Final shape: (n_distr, n_points).
     means = []
 
-    # Final shape: (n_means, n_points).
+    # Final shape: (n_distr, n_points).
     stdevs = []
 
-    # Final shape: (n_samples, n_means, n_points).
+    # Final shape: (n_samples, n_distr, n_points).
     samples = []
 
     for i in range(n_distr):
