@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Dense
 import tensorflow_probability as tfp
@@ -97,17 +98,25 @@ class CouplingLayer(tf.keras.layers.Layer):
         return [s, t]
 
 
-class RealNVPBijector(tfp.bijectors.Bijector):
+class AffineBijector(tfp.bijectors.Bijector):
     """
-    Subclass of TFP's `Bijector` object implementing the affine bijector
-    needed for a RealNVP model. In particular, the affine transformation
-    should be trivial (i.e. the identity, i.e. with unit scaling and zero
-    translation factor) for the first n_masked_dims dimensions of the input,
-    and parametrized by a neural network for the last n_affine_dims dimensions
-    of the input.
+    Subclass of TFP's `Bijector` object implementing an affine bijector.
+
+    Note: the fact that this bijector is used in RealNVP model is fully
+          encoded in the function passed to the constructor to generate the
+          affine parameters. In general, this bijector knows nothing about
+          RealNVP models.
     """
-    def __init__(self, coupling_layer, validate_args=False, name='real_nvp'):
+    def __init__(
+        self,
+        scale_and_transl_fn,
+        validate_args=False,
+        name='affine_bij'
+    ):
         """
+        Class constructor. The `scale_and_transl_fn` parameter is a callable
+        returning the scale and translation (shift) parameters for each point
+        it's called upon.
         """
         super().__init__(
             validate_args=validate_args,
@@ -116,13 +125,15 @@ class RealNVPBijector(tfp.bijectors.Bijector):
             name=name
         )
 
-        # Coupling layer parametrizing the bijector.
-        self.coupling_layer = coupling_layer
+        # Callable returning the scale and translation values parametrizing
+        # the bijector.
+        self.scale_and_transl_fn = scale_and_transl_fn
 
     def _forward(self, z):
         """
+        Forward trasformation.
         """
-        s, t = self.coupling_layer(z)
+        s, t = self.scale_and_transl_fn(z)
 
         affine_bijector = tfp.bijectors.Chain([
             tfp.bijectors.Shift(shift=t),
@@ -133,8 +144,9 @@ class RealNVPBijector(tfp.bijectors.Bijector):
 
     def _forward_log_det_jacobian(self, z):
         """
+        Log determinant of the forward transformation.
         """
-        s, t = self.coupling_layer(z)
+        s, t = self.scale_and_transl_fn(z)
 
         affine_bijector = tfp.bijectors.Chain([
             tfp.bijectors.Shift(shift=t),
@@ -145,11 +157,12 @@ class RealNVPBijector(tfp.bijectors.Bijector):
 
     def _inverse(self, x):
         """
+        Inverse transformation.
         """
         # We can pass x (belonging to the target space) to the coupling layer
         # because it only really uses the first n_masked_dims dimensions,
         # for which it holds that x_i = z_i.
-        s, t = self.coupling_layer(x)
+        s, t = self.scale_and_transl_fn(x)
 
         inverse_affine_bijector = tfp.bijectors.Chain([
             tfp.bijectors.Scale(scale=tf.math.exp(-s)),
@@ -160,11 +173,12 @@ class RealNVPBijector(tfp.bijectors.Bijector):
 
     def _inverse_log_det_jacobian(self, x):
         """
+        Log determinant of the inverse transformation.
         """
         # We can pass x (belonging to the target space) to the coupling layer
         # because it only really uses the first n_masked_dims dimensions,
         # for which it holds that x_i = z_i.
-        s, t = self.coupling_layer(x)
+        s, t = self.scale_and_transl_fn(x)
 
         inverse_affine_bijector = tfp.bijectors.Chain([
             tfp.bijectors.Scale(tf.math.exp(-s)),
@@ -174,20 +188,134 @@ class RealNVPBijector(tfp.bijectors.Bijector):
         return inverse_affine_bijector.forward_log_det_jacobian(x)
 
 
-class RealNVPLayer(tf.keras.Model):
+class RealNVPLayer(tf.keras.layers.Layer):
+    """
+    Subclass of Keras' `Layer` implementing a RealNVP block consisting in
+    (sequentially):
+      1. A permutation of the features of the input.
+      2. An affine transformation parametrized by a `CouplingLayer` object.
+    """
+    def __init__(
+        self,
+        n_masked_dims,
+        n_affine_dims,
+        hidden_layers_dims
+    ):
+        """
+        Class constructor. Three basic objects are instantiated (and assigned
+        to attributes) and composed:
+          * A `CouplingLayer` providing the parametrization for an affine
+            bijector for the RealNVP block.
+          * An affine bijector.
+          * A permutation bijector.
+        """
+        super().__init__()
+
+        self.n_masked_dims = n_masked_dims
+        self.n_affine_dims = n_affine_dims
+        self.hidden_layers_dims = hidden_layers_dims
+
+        # Generate a permutation of the feature indices.
+        self.feature_permutation = np.random.permutation(
+            range(self.n_masked_dims + self.n_affine_dims)
+        )
+
+        # Instantiate a permutation bijector.
+        self.permutation = tfp.bijectors.Permute(
+            permutation=self.feature_permutation, axis=-1
+        )
+
+        # Instantiate a RealNVP affine bijector.
+        self.coupling_layer = CouplingLayer(
+            n_masked_dims=self.n_masked_dims,
+            n_affine_dims=self.n_affine_dims,
+            hidden_layers_dims=self.hidden_layers_dims
+        )
+
+        self.affine_bijector = AffineBijector(
+            scale_and_transl_fn=self.coupling_layer
+        )
+
+        self.bijector = tfp.bijectors.Chain([
+            self.affine_bijector,
+            self.permutation
+        ])
+
+    def call(self, z):
+        """
+        Forward pass, consisting in the forward tranformation of the chained
+        bijector composed by (in sequential order):
+          1. A permutation of the features of the input x.
+          2. An affine transformation parametrized by a `CouplingLayer`
+             object.
+        """
+        return self.bijector.forward(z)
+
+
+class RealNVPModel(tf.keras.Model):
     """
     Subclass of Keras `Model` implementing a RealNVP flow model.
     """
     def __init__(
-            self
-        ):
+        self,
+        n_masked_dims,
+        n_affine_dims,
+        n_real_nvp_blocks,
+        hidden_layers_dims
+    ):
         """
+        Parameters
+        ----------
+        n_masked_dims : int
+            Number of masked dimension (left unaltered by the RealNVP affine
+            transformations).
+        n_affine_dims : int
+            Number of dimensions actually transformed by the RealNVP affine
+            transformations.
+        n_real_nvp_blocks : int
+            Number of RealNVP (permutation + affine transformation) blocks.
+        hidden_layers_dims : list
+            List of integers indicating the number of units of the HIDDEN
+            Dense layers in the coupling layers. The total number of Dense
+            layers is in the stacks generating the output tensors is
+            len(hidden_layers_dims) + 1.
         """
         super().__init__()
 
-        pass
+        self.n_masked_dims = n_masked_dims
+        self.n_affine_dims = n_affine_dims
+        self.n_real_nvp_blocks = n_real_nvp_blocks
+        self.hidden_layers_dims = hidden_layers_dims
+
+        self.base_distr = tfd.Independent(
+                tfd.Normal(
+                loc=tf.zeros(shape=self.n_masked_dims + self.n_affine_dims),
+                scale=tf.ones(shape=self.n_masked_dims + self.n_affine_dims)
+            ),
+            reinterpreted_batch_ndims=1
+        )
+
+        self.blocks = [
+            RealNVPLayer(
+                n_masked_dims=self.n_masked_dims,
+                n_affine_dims=self.n_affine_dims,
+                hidden_layers_dims=self.hidden_layers_dims
+            )
+            for _ in range(self.n_real_nvp_blocks)
+        ]
+
+        self.full_bijector = tfp.bijectors.Chain(
+            [block.bijector for block in self.blocks]
+        )
+
+        self.transformed_distr = tfd.TransformedDistribution(
+            distribution=self.base_distr,
+            bijector=self.full_bijector,
+        )
 
     def call(self, z):
         """
+        Forward pass, corresponding to the forward transformation of the full
+        bijector.
         """
-        pass
+        return self.transformed_distr.bijector.forward(z)
