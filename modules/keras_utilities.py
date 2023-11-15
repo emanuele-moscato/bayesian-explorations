@@ -24,11 +24,23 @@ class NEpochsLogger(tf.keras.callbacks.Callback):
 def append_to_full_history(training_history, full_history):
     """
     """
-    for key, value in training_history.history.items():
-        if key in full_history.keys():
-            full_history[key] += value
-        else:
-            full_history[key] = value
+    if isinstance(full_history, tf.keras.callbacks.History):
+        for key, value in training_history.history.items():
+            if key in full_history.history.keys():
+                full_history.history[key] += value
+            else:
+                full_history.history[key] = value
+    elif isinstance(full_history, dict):
+        for key, value in training_history.history.items():
+            if key in full_history.keys():
+                full_history[key] += value
+            else:
+                full_history[key] = value
+    else:
+        raise ValueError(
+            'Input training_history should be of type '
+            '{tf.keras.callbacks.History} or dict'
+        )
 
     return full_history
 
