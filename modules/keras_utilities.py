@@ -18,7 +18,13 @@ class NEpochsLogger(tf.keras.callbacks.Callback):
         """
         """
         if epoch % self.n_epochs == 0:
-            print(f'Epoch: {epoch} - loss: {logs["loss"]} - mse: {logs["mse"]}')
+            if 'mse' in logs.keys():
+                print(
+                    f'Epoch: {epoch} - loss: {logs["loss"]}'
+                    f' - mse: {logs["mse"]}'
+                )
+            else:
+                print(f'Epoch: {epoch} - loss: {logs["loss"]}')
 
 
 def append_to_full_history(training_history, full_history):
