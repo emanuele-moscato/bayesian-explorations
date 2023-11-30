@@ -112,3 +112,16 @@ class MCDropoutModel(tf.keras.Model):
                 output = layer(output)
 
         return tf.keras.Model(inputs=input, outputs=output)
+
+
+def get_intermediate_output(x, model, n_layers):
+    """
+    Given the NN `model`, passes the input `x` through its first `n_layers`
+    layers and outputs the result.
+    """
+    output = x
+
+    for i in range(n_layers):
+        output = model.layers[i](output)
+
+    return output
