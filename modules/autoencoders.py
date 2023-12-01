@@ -52,6 +52,8 @@ class Decoder(tf.keras.Model):
     def __init__(self, image_reshaping_size):
         super().__init__()
 
+        self.image_reshaping_size = image_reshaping_size
+
         # Initial dense layer: maps latent vectors into
         # vectors with enough components to be reshaped
         # into images.
@@ -91,6 +93,24 @@ class Decoder(tf.keras.Model):
             activation='sigmoid',
             padding='same'
         )
+
+    def get_config(self):
+        """
+        Generates the config for the model.
+        """
+        config_extension = {
+            'image_reshaping_size': self.image_reshaping_size
+        }
+
+        return {**config_extension}
+
+    @classmethod
+    def from_config(cls, config):
+        """
+        Class method that generates a new instance of the model starting from
+        a config.
+        """
+        return cls(**config)
 
     def call(self, x):
         x = self.initial_dense(x)
