@@ -54,4 +54,6 @@ Books:
 
   - Goodfellow, Bengio, Courville - [Deep learning](https://www.deeplearningbook.org/): the bible of deep learning from the world leading experts.
 
+  - Bishop, Bishop - [Deep Learning - Foundations and Concepts](https://www.bishopbook.com/): new book (2024) on deep learning by the author of one of the best books on machine learning in general.
+
 **Suggestion:** as before, to avoid feeling overwhelmed start with one source and try to stick to it. The first entry has working code examples for literally everything that's discussed, is very hands-on and is fairly easy to follow - plus, TFP is among the libraries used.
